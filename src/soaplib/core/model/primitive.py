@@ -296,3 +296,44 @@ class Boolean(SimpleType):
 class Mandatory(object):
     String = String(min_len=1, min_occurs=1, nillable=False)
     Integer = Integer(min_occurs=1, nillable=False)
+
+class FormattedDate(Date):
+    '''
+    Now we can get customized representation of Date values
+    usage: FormattedDate(...., format='%m-%d-%Y')
+    For an exhaustive list of all available formats, check this:
+    http://docs.python.org/library/datetime.html#strftime-strptime-behavior
+    '''
+    @classmethod
+    @nillable_value
+    def to_parent_element(cls, value, tns, parent_elt, name='retval'):
+        format = getattr(cls.Attributes, 'format', None)
+        if format:
+            try:
+                formated_date = datetime.datetime.strftime(value, format)
+            except TypeError:
+                raise Exception("Not able to format Date [%s] in [%s] format" % (value, format))
+            SimpleType.to_parent_element(formated_date,
+                                         tns,
+                                         parent_elt,
+                                         name)
+        SimpleType.to_parent_element(value.isoformat(), tns, parent_elt, name)
+
+    @classmethod
+    @nillable_string
+    def from_string(cls, string):
+        """expect ISO formatted dates"""
+        format = getattr(cls.Attributes, 'format', None)
+        if format:
+            return datetime.datetime.strptime(string, format)
+        def parse_date(date_match):
+            fields = date_match.groupdict(0)
+            year, month, day = [int(fields[x]) for x in
+                ("year", "month", "day")]
+            return datetime.date(year, month, day)
+
+        match = _date_re.match(string)
+        if not match:
+            raise Exception("Date [%s] not in known format" % string)
+
+        return parse_date(match)
