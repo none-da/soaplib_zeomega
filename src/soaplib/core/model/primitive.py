@@ -317,7 +317,8 @@ class FormattedDate(Date):
                                          tns,
                                          parent_elt,
                                          name)
-        SimpleType.to_parent_element(value.isoformat(), tns, parent_elt, name)
+        else:
+            SimpleType.to_parent_element(value.isoformat(), tns, parent_elt, name)
 
     @classmethod
     @nillable_string

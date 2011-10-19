@@ -21,11 +21,12 @@
 import unittest
 import os
 from datetime import datetime
-from lxml import etree
-
+from lxml import objectify
 from soaplib.core.model.clazz import ClassModel
-from soaplib.core.model.primitive import Integer, String, DateTime
+from soaplib.core.model.primitive import Integer, String, DateTime, FormattedDate
 from soaplib.core.util.model_utils import ClassModelConverter
+
+DATE_FORMAT = '%m-%d-%Y'
 
 class SimpleModel(ClassModel):
 
@@ -34,12 +35,14 @@ class SimpleModel(ClassModel):
     simple_text = String
     simple_num = Integer
     simple_date = DateTime
+    simple_fdate = FormattedDate(format=DATE_FORMAT)
 
 def simple_factory():
     simple = SimpleModel()
     simple.simple_text = "Text"
     simple.simple_num = 1234
     simple.simple_date = datetime(2001, 12, 12)
+    simple.simple_fdate = datetime.date(datetime.now())
     return simple
 
 
@@ -123,6 +126,15 @@ class ModelAsRootTestCase(BaseCase):
 
     def test_empty_ns(self):
         self.empty_ns()
+
+    def test_formatted_date(self):
+        conv = self.converter
+        conv.include_ns = False
+        xml = conv.to_xml()
+        find = objectify.ObjectPath(['root', 'complexmodel', 'simple'])
+        formatted_date = find(objectify.fromstring(xml)).xpath('simple_fdate')[0]
+        self.assertTrue(formatted_date)
+        self.assertTrue(datetime.strftime(datetime.now(), DATE_FORMAT) == formatted_date)
 
 class AddedRootElementTestCase(BaseCase):
     def setUp(self):
